@@ -11,6 +11,15 @@ Calm down. You don't need Kafka yet. Design the right architecture before writin
 
 **Recommend what fits the project NOW, not what's trendy.** A solo MVP doesn't need Redis. A social network with 200k users shouldn't use Supabase just for the DB. Every recommendation must link to a specific project dimension.
 
+## Language Adaptation
+
+Detect the user's language from their message. Write ALL output (questions, docs, agent rules) in the same language. If the user writes in Portuguese, output in Portuguese. If English, output in English. The architecture.md section headers should also match:
+- EN: "Use Now" / "Add Later" / "Don't Use Now"
+- PT: "Use Agora" / "Adicionar Depois" / "Não Usar Agora"
+- ES: "Usar Ahora" / "Agregar Después" / "No Usar Ahora"
+
+Agent rules are always in English (they're instructions for coding agents that expect English).
+
 ## Flow Selection
 
 ```dot
@@ -48,7 +57,7 @@ Read `extraction-rules.md` in this skill directory. Analyze the user's descripti
 | product_type | enum | web, mobile, cli, game, iot, data_pipeline, desktop, other, unknown |
 | team_size | number/null | inferred from description |
 | user_scale | enum | lt_1k, lt_10k, lt_100k, lt_1m, gt_1m, unknown |
-| monthly_budget | string/null | if mentioned |
+| monthly_budget | enum | free, low (< $50), medium ($50-500), high (> $500), unknown |
 | needs_realtime | bool/null | inferred from features |
 | access_pattern | enum | read_heavy, write_heavy, balanced, graph_like, time_series, unknown |
 | has_offline_requirement | bool/null | inferred |
@@ -59,7 +68,27 @@ For each dimension, assign:
 - `confidence` — 0.0 to 1.0 (use rules from extraction-rules.md)
 - `signal` — the text fragment that led to inference
 
-### Step 2: Follow-Up Questions (if needed)
+### Step 2: Show Alignment Score
+
+After extraction, show the user a quick visual summary before asking questions:
+
+```
+📊 Dimension Extraction — {X}/9 dimensions confident
+
+  project_moment   ██████████ validate (0.95) ✓  "starting as MVP"
+  product_type     ████████░░ web      (0.85) ✓  "SaaS dashboard"
+  team_size        ██████████ 1        (0.95) ✓  "solo"
+  user_scale       ███░░░░░░░ unknown  (0.30) ✗  no mention
+  monthly_budget   ███░░░░░░░ unknown  (0.30) ✗  no mention
+  needs_realtime   ████████░░ false    (0.85) ✓  "dashboard"
+  access_pattern   ████████░░ read     (0.80) ✓  "tracking"
+  has_offline      ███████░░░ false    (0.75) ✓  "SaaS"
+  latency_critical ████████░░ false    (0.85) ✓  "dashboard"
+
+  ✓ = confidence >= 0.7 | ✗ = needs follow-up
+```
+
+### Step 3: Follow-Up Questions (if needed)
 
 If ANY dimension has confidence < 0.7:
 - Pick the dimensions below 0.7
@@ -74,9 +103,11 @@ If ANY dimension has confidence < 0.7:
 
 Include a brief "why it matters" for each question. Wait for answers, then re-score. Repeat until all dimensions >= 0.7.
 
-### Step 3: Generate Recommendation
+### Step 4: Generate Recommendation
 
-Read `recommendation-rules.md` in this skill directory. Based on extracted dimensions, produce:
+Read `recommendation-rules.md` in this skill directory. First check the **Stack Recipes** section for a matching combination. If a recipe matches, use it as the starting point and adapt. If no recipe matches, build from individual rules.
+
+Produce:
 
 1. **Stack — Use Now**: each item with name, role, why_now, when_to_replace
 2. **Stack — Add Later**: each with measurable trigger (not "when you need it")
@@ -86,7 +117,7 @@ Read `recommendation-rules.md` in this skill directory. Based on extracted dimen
 6. **Diagrams**: ASCII + Mermaid
 7. **Agent rules**: direct instructions for the coding agent
 
-### Step 4: Write Output
+### Step 5: Write Output
 
 Write two files using the templates in the "Output Format" section below.
 
@@ -100,7 +131,7 @@ Write two files using the templates in the "Output Format" section below.
 
 ### Step 1: Scan Project
 
-Use Glob, Read, and Bash to gather:
+Read `brownfield-rules.md` in this skill directory for the full scan checklist. Use Glob, Read, and Bash to gather:
 
 1. **Directory tree** (max depth 4). Ignore: `node_modules`, `.git`, `dist`, `build`, `.next`, `__pycache__`, `.venv`, `venv`, `coverage`
 
@@ -108,20 +139,41 @@ Use Glob, Read, and Bash to gather:
 
 3. **Schema files** — search recursively in `models/`, `schemas/`, `db/`, `database/`, `migrations/`, `src/`, `app/`, `lib/`, `core/` for extensions `.prisma`, `.sql`, `.graphql`, `.gql` and filenames `schema.prisma`, `schema.rb`, `models.py`, `schema.sql`. Cap: 2000 chars per file, max 10 files.
 
+4. **Infrastructure files** — `.env.example`, `docker-compose.yml`, `Dockerfile`, `.github/workflows/*.yml`, `vercel.json`, `fly.toml`, `railway.json`, `render.yaml`, `netlify.toml`
+
+5. **Import analysis** — read 3-5 main source files to detect libraries, frameworks, and service connections (database drivers, cache clients, queue libraries, API SDKs)
+
 ### Step 2: Diagnose
 
-Read `brownfield-rules.md` in this skill directory. Analyze scan results and produce:
+Analyze scan results and produce:
 
-1. **Detected stack** — what's being used
+1. **Detected stack** — what's being used (with evidence)
 2. **Current moment** — with confidence score
 3. **Access patterns** — inferred from schema and code
 4. **Diagnosis**: what's working well, technical debt (with impact), premature complexity
-5. **Evolution roadmap**: next move + phased roadmap with measurable triggers
-6. **Stack recommendations**: keep, replace (with migration notes), add later
+5. **Alignment score** — how well current infra matches detected moment
+6. **Evolution roadmap**: next move + phased roadmap with measurable triggers
+7. **Stack recommendations**: keep, replace (with migration notes), add later
 
-### Step 3: Write Output
+### Step 3: Show Alignment Score
 
-Same output format as greenfield (adapted for brownfield content).
+```
+📊 Architecture Alignment — {moment} moment
+
+  Current stack vs ideal for {moment}:
+
+  ✅ PostgreSQL          — appropriate for {moment}
+  ✅ Next.js             — appropriate for {moment}
+  ⚠️  Redis              — premature for {moment} (< 10k users)
+  ❌ Kubernetes          — overkill for {moment} (team_size = 2)
+  ❌ 3 microservices     — premature for {moment} (< 3 devs)
+
+  Alignment: 40% — significant premature complexity detected
+```
+
+### Step 4: Write Output
+
+Same output format as greenfield (adapted for brownfield content), including alignment score.
 
 ---
 
@@ -139,12 +191,13 @@ Read `docs/architecture.md` in the project. If it doesn't exist, tell the user t
 
 - **Preserve** what's working
 - **Address** the specific reason for update
-- **Add new ADRs** for changes (don't modify existing ones)
+- **Add new ADRs** for changes — NEVER modify or delete existing ADRs
 - **Update** diagrams, agent rules, and cost estimates
+- **Append to Changelog** — add entry with date, reason, and what changed
 
 ### Step 3: Write Output
 
-Overwrite `docs/architecture.md` and update the agent file block.
+Overwrite `docs/architecture.md` (with changelog preserved) and update the agent file block.
 
 ---
 
@@ -160,6 +213,9 @@ Overwrite `docs/architecture.md` and update the agent file block.
 ## Summary
 {2-3 sentence executive summary}
 
+## Alignment Score
+{visual score showing how well the stack fits the current moment — see templates above}
+
 ## Architecture Diagram (ASCII)
 ```
 {ascii diagram}
@@ -170,16 +226,16 @@ Overwrite `docs/architecture.md` and update the agent file block.
 {mermaid diagram}
 ```
 
-## Use Agora
+## Use Now
 ### {Technology Name}
 - **Role:** {what it does}
 - **Why now:** {why this fits the current moment}
 - **When to replace:** {measurable trigger}
 
-## Adicionar Depois
+## Add Later
 - **{Name}** — add when: {measurable trigger}. Not now because: {reason}
 
-## Nao Usar Agora
+## Don't Use Now
 - **{Name}** — {reason}. Reconsider when: {trigger}
 
 ## Architecture Decision Records
@@ -198,8 +254,13 @@ Overwrite `docs/architecture.md` and update the agent file block.
 ## Agent Rules
 - {RULE — direct instruction, not suggestion}
 
+## Changelog
+| Date | Reason | Changes |
+|------|--------|---------|
+| {YYYY-MM-DD} | Initial generation | — |
+
 ---
-Para atualizar, rode `/planfirst` novamente.
+To update, run `/planfirst` again.
 ```
 
 ### File 2: Agent File Injection
@@ -234,6 +295,9 @@ Full spec: `./docs/architecture.md` — read before adding any infrastructure.
 - **Max 4 questions per round** — never dump all dimensions as a form
 - **Questions must sound like conversation**, not interrogation
 - **Every recommendation must link to a project dimension** — no "because it's popular"
-- **"Nao Usar Agora" section is MANDATORY** — minimum 2 items
+- **"Don't Use Now" section is MANDATORY** — minimum 2 items
 - **Triggers must be measurable** — "when daily active users exceed 10k", not "when you need it"
 - **Agent rules are instructions, not suggestions** — "DO NOT add Redis" not "consider avoiding Redis"
+- **Always show alignment score** — before questions (greenfield) and in diagnosis (brownfield)
+- **Preserve ADR history** — never modify or delete existing ADRs, only append
+- **Match user's language** — except agent rules which stay in English
