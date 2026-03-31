@@ -1,0 +1,19 @@
+{
+  "name": "planfirst-marketplace",
+  "owner": {
+    "name": "Sergio"
+  },
+  "metadata": {
+    "description": "Calm down. You don't need Kafka yet. Plan your architecture before writing code."
+  },
+  "plugins": [
+    {
+      "name": "planfirst",
+      "source": "./",
+      "description": "Calm down. You don't need Kafka yet. Design the right architecture before writing code — recommends what fits your project's moment, not what's trendy.",
+      "version": "1.0.0",
+      "keywords": ["architecture", "stack", "infrastructure", "planning", "yagni"],
+      "category": "development"
+    }
+  ]
+}

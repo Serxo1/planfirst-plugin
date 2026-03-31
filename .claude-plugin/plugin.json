@@ -1,0 +1,10 @@
+{
+  "name": "planfirst",
+  "description": "Calm down. You don't need Kafka yet. Design the right architecture before writing code — recommends what fits your project's moment, not what's trendy.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Sergio"
+  },
+  "license": "MIT",
+  "keywords": ["architecture", "stack", "infrastructure", "design", "planning", "greenfield", "brownfield"]
+}
