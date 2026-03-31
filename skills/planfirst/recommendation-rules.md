@@ -120,29 +120,128 @@ Cost:       $0/mo
 Avoid:      Any database service, Docker, cloud hosting (unless it's a cloud CLI)
 ```
 
-### Data Pipeline + Validate + Solo
+### Data Pipeline + Validate + Solo (< 10k rows/day)
 
 ```
 Language:   Python (preferred) or TypeScript
-Orchestration: Simple cron job or GitHub Actions scheduled workflow
-Processing: Pandas / Polars (Python) or custom scripts
-Storage:    S3/R2 for raw data, PostgreSQL/SQLite for processed
-Queue:      None — process sequentially or use simple file-based batching
-Cost:       $0-5/mo
-Avoid:      Kafka (only above 100k events/day), Airflow (overkill for solo), Spark
+Processing: Pandas or Polars — read CSV/JSON, transform, write
+Orchestration: Cron job, GitHub Actions schedule, or simple Python script with schedule lib
+Storage:    Local files (CSV/Parquet) or SQLite for processed data
+Source:     API calls, CSV files, web scraping (requests + BeautifulSoup/Playwright)
+Output:     CSV/Excel for stakeholders, or PostgreSQL (Neon free) for dashboards
+Viz:        Jupyter notebooks, Streamlit (free deploy on Community Cloud), or Google Sheets API
+Cost:       $0/mo
+Avoid:      Airflow, Kafka, Spark, dbt, data lakes, Snowflake — ALL overkill at this scale
+Note:       A single Python script + cron handles 99% of solo data needs
 ```
 
-### Data Pipeline + Scale + Team
+### Data Pipeline + Validate + Solo (Analytics/BI dashboard)
 
 ```
-Language:   Python or Go
-Orchestration: Airflow / Dagster / Prefect
-Processing: Spark (if >1TB), Polars/DuckDB (if <1TB)
-Storage:    S3/GCS for data lake, PostgreSQL/BigQuery for analytics
-Queue:      Kafka / AWS Kinesis (justified above 100k events/day)
-Monitoring: Datadog / custom dashboards
+Language:   Python or SQL
+Database:   DuckDB (local, blazing fast for analytics) or PostgreSQL (Neon free)
+Processing: DuckDB SQL queries directly on CSV/Parquet files — no ETL needed
+Dashboard:  Streamlit (free), Evidence.dev (SQL-based BI, free), or Metabase (self-hosted, free)
+Scheduling: Cron or GitHub Actions for data refresh
+Cost:       $0/mo
+Avoid:      Tableau ($70/mo), Looker, Power BI Pro, Snowflake, BigQuery
+Note:       DuckDB can query 100GB+ Parquet files on a laptop. You don't need a data warehouse.
+```
+
+### Data Pipeline + Grow + Small Team (10k-1M rows/day)
+
+```
+Language:   Python
+Processing: Polars (faster than Pandas) or DuckDB for SQL-based transforms
+Orchestration: Dagster (modern, better DX than Airflow) or Prefect (simpler)
+Storage:    S3/R2 for raw data (Parquet format), PostgreSQL for processed/serving
+Transform:  dbt (justified now — team needs reproducible transforms and lineage)
+Quality:    Great Expectations or dbt tests for data validation
+Scheduling: Dagster/Prefect built-in scheduler
+Monitoring: Dagster UI (built-in) + Sentry for errors
+Cost:       $20-50/mo (S3 storage + compute)
+Avoid:      Kafka (unless streaming required), Spark (unless >1TB), Snowflake (unless budget allows)
+Add when:   Kafka when you need real-time streaming, not just batch. Spark when Polars/DuckDB hits memory limits.
+```
+
+### Data Pipeline + Scale + Team (1M+ rows/day)
+
+```
+Language:   Python or Go (for high-throughput producers)
+Processing: Spark (if >1TB) or Polars/DuckDB (if <1TB — seriously, test before jumping to Spark)
+Orchestration: Dagster or Airflow (Airflow if team already knows it)
+Storage:    S3/GCS data lake (Parquet, partitioned by date) + warehouse for analytics
+Warehouse:  BigQuery (if GCP), Snowflake (if budget), ClickHouse (self-hosted, free, very fast)
+Streaming:  Kafka / AWS Kinesis (justified above 100k events/day for real-time)
+Transform:  dbt for warehouse transforms, Spark/Polars for heavy processing
+Quality:    Great Expectations + dbt tests + monitoring for data freshness
+Catalog:    DataHub or OpenMetadata (self-hosted) for data discovery
 Cost:       $100-500/mo
-Consider:   Exactly-once processing guarantees, dead letter queues, data quality checks
+Consider:   Exactly-once processing guarantees, dead letter queues, schema evolution, backfill strategy
+```
+
+### ML/AI Pipeline + Validate + Solo
+
+```
+Language:   Python
+Framework:  Jupyter notebooks for exploration, then refactor to scripts
+ML:         scikit-learn (start simple), PyTorch/TensorFlow only if deep learning needed
+Data:       Pandas/Polars for preprocessing, local files or SQLite for datasets
+Experiment: MLflow (self-hosted, free) or just Git + markdown notes
+Serving:    FastAPI endpoint or Streamlit app for demo
+Compute:    Local machine. If GPU needed: Google Colab (free), Kaggle (free), or Lambda Cloud ($0.50/hr)
+Vector DB:  None yet. For RAG: just use PostgreSQL + pgvector (free)
+Cost:       $0/mo (or pay-per-use for GPU)
+Avoid:      Kubernetes, MLOps platforms (MLflow is enough), Sagemaker, Vertex AI, vector DB SaaS
+Note:       Start with the simplest model that works. Upgrade model complexity only when simple fails.
+```
+
+### ML/AI Pipeline + Grow + Team
+
+```
+Language:   Python
+Framework:  Structured Python packages (not notebooks in production)
+ML:         PyTorch / TensorFlow / Hugging Face
+Data:       DuckDB or PostgreSQL for feature store, S3 for datasets
+Experiment: MLflow (self-hosted) or Weights & Biases (free for individuals)
+Training:   Modal ($0.50/hr GPU), Lambda Cloud, or cloud spot instances
+Serving:    FastAPI + Docker, or Modal for serverless inference
+Monitoring: Track model performance metrics, data drift (evidently.ai, free)
+Vector DB:  PostgreSQL + pgvector (sufficient up to ~5M vectors). Qdrant if need scale.
+Cost:       $50-200/mo depending on GPU usage
+Avoid:      Sagemaker (expensive, lock-in), custom K8s ML infra, premature vector DB SaaS
+Add when:   Feature store (Feast) when feature reuse justifies it. Model registry when >5 models in production.
+```
+
+### Data Engineering + Real-Time / Streaming
+
+```
+Language:   Python or Go or Java
+Streaming:  Kafka (self-managed or Confluent) or AWS Kinesis or Redpanda (Kafka-compatible, simpler)
+Processing: Flink (for complex event processing) or Kafka Streams (simpler)
+Storage:    ClickHouse or TimescaleDB for time-series analytics
+Output:     PostgreSQL for serving layer, or materialized views in ClickHouse
+Monitoring: Kafka UI (free), Grafana + Prometheus for pipeline metrics
+Cost:       $100-300/mo (Kafka is the main cost)
+Justified:  ONLY when you need sub-second data freshness. If hourly/daily batch is fine, don't use streaming.
+Avoid:      Spark Streaming (heavy), AWS Glue Streaming (expensive), custom pub/sub
+Rule:       If someone says "real-time" but means "updated every 5 minutes", use batch + cron.
+```
+
+### Data + Self-Hosted (VPS/On-Premise)
+
+```
+Server:     VPS (Hetzner dedicated $40/mo — 8 cores, 32GB RAM handles a LOT of data)
+Database:   PostgreSQL + TimescaleDB extension (for time-series)
+Analytics:  ClickHouse (self-hosted, free, insanely fast for OLAP)
+Dashboard:  Metabase (self-hosted, free) or Grafana
+Orchestration: Dagster (lightweight) or cron for simple pipelines
+Processing: DuckDB / Polars on the same server
+Storage:    MinIO for S3-compatible object storage (self-hosted)
+Cost:       $20-60/mo (dedicated server)
+Note:       A single Hetzner AX41 (64GB RAM, 512GB NVMe) can handle analytical workloads
+            that would cost $500+/mo on managed cloud services
+Avoid:      Cloud data warehouses (Snowflake, BigQuery) unless data privacy allows it
 ```
 
 ### Game + Validate + Solo
@@ -360,6 +459,11 @@ Avoid:      Running your own PostgreSQL if team < 3 (managed is worth it for bac
 | `has_offline_requirement = true` | Plan sync conflict resolution strategy |
 | `product_type = cli` | Database rarely needed; files, SQLite, or API calls suffice |
 | `product_type = data_pipeline` | Kafka ONLY above 100k events/day |
+| `product_type = data_pipeline` + `team_size = 1` | NO Airflow, NO Spark — use cron + Polars/DuckDB |
+| `product_type = data_pipeline` + batch OK | Prefer batch over streaming — streaming is 10x the complexity |
+| Data + "dashboard" or "analytics" | Consider DuckDB + Metabase/Evidence before any warehouse |
+| Data + "ML" or "AI" | Start with scikit-learn, upgrade to PyTorch only when needed |
+| Data + "vector" or "RAG" or "embeddings" | PostgreSQL + pgvector first, dedicated vector DB only at >5M vectors |
 | `product_type = mobile` | Always consider push notifications infrastructure |
 | `product_type = game` | Always discuss asset delivery / CDN for game assets |
 | User mentions "own server", "VPS", "self-hosted" | Use self-hosted recipes — Hetzner/DO/OVH, not PaaS |

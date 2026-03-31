@@ -27,6 +27,11 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | "sensors", "devices", "embedded", "MQTT", "Arduino", "Raspberry Pi" | iot | 0.95 |
 | "web", "SaaS", "dashboard", "app" (no mobile qualifier), "website" | web | 0.85 |
 | "pipeline", "ETL", "data processing", "batch jobs", "data ingestion" | data_pipeline | 0.90 |
+| "analytics", "BI", "dashboard" + data context (not web app) | data_pipeline | 0.80 |
+| "ML", "machine learning", "model training", "AI pipeline" | data_pipeline | 0.85 |
+| "scraping", "web scraper", "data collection" | data_pipeline | 0.85 |
+| "data warehouse", "data lake", "OLAP" | data_pipeline | 0.90 |
+| "RAG", "embeddings", "vector search" (as the core product) | data_pipeline | 0.75 |
 | "desktop", "Electron", "Tauri", "native app" (with desktop context) | desktop | 0.90 |
 | "API", "backend", "microservice" (no frontend mention) | web | 0.75 |
 | "Chrome extension", "browser extension", "plugin" | web | 0.80 |
