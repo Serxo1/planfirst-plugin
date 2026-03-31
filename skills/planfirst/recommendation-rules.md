@@ -195,6 +195,111 @@ Cost:       $0/mo (until billing integration)
 Avoid:      Per-tenant databases (premature), microservices, Redis
 ```
 
+### Self-Hosted / VPS + Validate + Solo + Low Budget
+
+```
+Server:     Single VPS (Hetzner $4/mo, DigitalOcean $6/mo, OVH $3.50/mo)
+OS:         Ubuntu LTS or Debian
+Framework:  Next.js, SvelteKit, or any — you control the runtime
+Database:   PostgreSQL (installed on same VPS) or SQLite (file on disk)
+Reverse proxy: Caddy (auto HTTPS, simpler than Nginx) or Nginx
+Deploy:     git pull + PM2 / systemd, or Docker Compose (2 services max: app + db)
+SSL:        Caddy auto-manages Let's Encrypt, or Certbot with Nginx
+Monitoring: Simple: uptime check (BetterStack free). Advanced: Netdata (self-hosted, free)
+Backup:     Cron + pg_dump to S3/R2 (Cloudflare R2 is free for 10GB)
+Cost:       $4-10/mo
+Avoid:      Kubernetes, Terraform, multiple servers, load balancer, managed DB services
+Note:       This is the cheapest production-ready setup. One server handles 10k+ DAU easily.
+```
+
+### Self-Hosted / VPS + Validate + Small Team
+
+```
+Server:     Single VPS (Hetzner CPX21 $8/mo or DigitalOcean $12/mo)
+OS:         Ubuntu LTS
+Framework:  Any full-stack framework
+Database:   PostgreSQL on same server
+Reverse proxy: Caddy or Nginx
+Deploy:     Docker Compose (app + db + optional Redis later)
+CI/CD:      GitHub Actions → SSH deploy or Docker push to registry
+SSL:        Caddy auto-HTTPS
+Monitoring: Netdata (self-hosted) + Sentry (free tier for errors)
+Backup:     Automated pg_dump + restic to S3/R2
+Cost:       $8-15/mo
+Avoid:      Multi-server setup, K8s, Ansible for 1 server
+```
+
+### Self-Hosted / VPS + Grow + Medium Budget
+
+```
+Servers:    2 VPS — app server + DB server (or keep single with more resources)
+OS:         Ubuntu LTS
+Framework:  Any — now decoupled frontend/API is acceptable
+Database:   PostgreSQL (dedicated server or managed: Hetzner Cloud DB)
+Cache:      Redis on app server (for sessions/rate-limiting only)
+Reverse proxy: Caddy or Nginx with rate limiting
+Deploy:     Docker Compose + GitHub Actions CD pipeline
+SSL:        Caddy or Cloudflare (free plan for DNS + CDN)
+CDN:        Cloudflare free tier for static assets and DDoS protection
+Monitoring: Grafana + Prometheus (self-hosted) or Netdata Cloud (free for 5 nodes)
+Backup:     Automated + tested restore procedure
+Firewall:   UFW/iptables — close all ports except 80, 443, SSH
+Cost:       $15-50/mo
+Add when:   Load balancer when single server CPU > 70% sustained
+```
+
+### Self-Hosted / VPS + Scale + High Budget
+
+```
+Servers:    3+ VPS behind load balancer (Hetzner LB $6/mo)
+OS:         Ubuntu LTS, managed via Ansible or similar
+App:        Docker Swarm (simpler than K8s) or K8s if team has ops experience
+Database:   PostgreSQL with streaming replication (primary + read replica)
+Cache:      Dedicated Redis server
+CDN:        Cloudflare Pro ($20/mo) or Bunny CDN
+Queue:      Redis + BullMQ or RabbitMQ (self-hosted)
+Deploy:     CI/CD with blue-green deployment via Docker Swarm / K8s
+Monitoring: Grafana + Prometheus + Loki (logs) — all self-hosted
+Alerting:   Grafana alerts → Slack/PagerDuty
+Backup:     pgBackRest with continuous archiving, tested weekly
+Security:   Fail2ban, automatic security updates, WAF via Cloudflare
+Cost:       $50-200/mo (significantly cheaper than equivalent cloud managed services)
+Note:       At this budget on self-hosted you get 10x the compute of managed PaaS
+```
+
+### Self-Hosted + On-Premise / Air-Gapped
+
+```
+Use case:   Enterprise, government, compliance (data cannot leave premises)
+Server:     Physical server or private cloud (Proxmox, VMware)
+Framework:  Any — no cloud dependency allowed
+Database:   PostgreSQL (self-managed) or SQLite for simpler apps
+Auth:       Self-hosted (Keycloak, Authentik) — NO cloud auth providers
+Storage:    MinIO (S3-compatible, self-hosted)
+Monitoring: Grafana + Prometheus (self-hosted)
+CI/CD:      GitLab self-hosted or Gitea + Drone CI
+Reverse proxy: Nginx or Traefik
+Container:  Docker Compose or Podman (rootless for security)
+Cost:       Hardware + electricity + ops time
+Critical:   Plan backup/DR strategy carefully — no cloud fallback
+Avoid:      Any SaaS dependency (Clerk, Auth0, Sentry cloud, Vercel, etc.)
+```
+
+### Hybrid: VPS + Managed Services (Best of Both)
+
+```
+Server:     VPS for app (Hetzner/DO $8-20/mo)
+Database:   Managed PostgreSQL (Neon free tier, or Supabase DB, or PlanetScale)
+CDN:        Cloudflare (free)
+Auth:       Clerk / Auth0 (free tier)
+Storage:    Cloudflare R2 (free for 10GB) or S3
+Deploy:     Docker on VPS + GitHub Actions
+Monitoring: Sentry (free) + BetterStack (free)
+Cost:       $8-20/mo (VPS) + free tiers for everything else
+Note:       Best cost/benefit — cheap compute + managed data layer
+Avoid:      Running your own PostgreSQL if team < 3 (managed is worth it for backups alone)
+```
+
 ---
 
 ## Rules by Moment
@@ -257,6 +362,11 @@ Avoid:      Per-tenant databases (premature), microservices, Redis
 | `product_type = data_pipeline` | Kafka ONLY above 100k events/day |
 | `product_type = mobile` | Always consider push notifications infrastructure |
 | `product_type = game` | Always discuss asset delivery / CDN for game assets |
+| User mentions "own server", "VPS", "self-hosted" | Use self-hosted recipes — Hetzner/DO/OVH, not PaaS |
+| User mentions "on-premise", "air-gapped", "compliance" | NO cloud SaaS deps — use self-hosted alternatives (Keycloak, MinIO, Gitea) |
+| Self-hosted + `team_size = 1` | Prefer Caddy over Nginx (simpler), Docker Compose over K8s, single VPS over multi |
+| Self-hosted + any moment | ALWAYS include backup strategy and firewall rules in recommendations |
+| Self-hosted + validate | Single VPS is enough — a $4/mo Hetzner handles 10k+ DAU |
 | Any | NEVER recommend technology just because it's popular |
 | Any | Every recommendation MUST link to a specific project dimension |
 | Any | "Avoid" section is MANDATORY — minimum 2 items |

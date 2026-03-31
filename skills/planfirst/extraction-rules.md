@@ -128,6 +128,19 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | "API", "SaaS" without latency mention | null | 0.40 |
 | "search engine", "autocomplete" | true | 0.75 |
 
+## hosting_preference (contextual — not scored, just detected)
+
+| Signal | Value |
+|--------|-------|
+| "own server", "VPS", "self-hosted", "Hetzner", "DigitalOcean", "OVH", "Linode" | self_hosted |
+| "on-premise", "air-gapped", "private cloud", "compliance", "data sovereignty" | on_premise |
+| "Vercel", "Railway", "Render", "Fly.io", "Heroku", "Cloudflare" | paas |
+| "AWS", "GCP", "Azure" (without specific service) | cloud_iaas |
+| "serverless", "Lambda", "Cloud Functions", "edge" | serverless |
+| No mention | default (recommend PaaS for validate/grow, flexible for scale+) |
+
+This dimension doesn't need confidence scoring — if the user mentions it, respect it. If not, default based on moment and team_size.
+
 ## Combination Boosts
 
 When multiple dimensions align, boost confidence on related dimensions:
