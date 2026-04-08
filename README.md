@@ -3,6 +3,7 @@
   <p align="center"><strong>Calm down. You don't need Kafka yet.</strong></p>
   <p align="center">
     <a href="#install"><img src="https://img.shields.io/badge/Claude_Code-Plugin-blue?style=flat-square" alt="Claude Code Plugin"></a>
+    <img src="https://img.shields.io/badge/status-Published-brightgreen?style=flat-square" alt="Published">
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="MIT License"></a>
     <a href="#how-it-works"><img src="https://img.shields.io/badge/flows-3-orange?style=flat-square" alt="3 Flows"></a>
     <a href="#hard-rules-by-moment"><img src="https://img.shields.io/badge/dimensions-9-purple?style=flat-square" alt="9 Dimensions"></a>
@@ -21,7 +22,7 @@ Most AI coding agents recommend what's popular. PlanFirst recommends what's **ap
 
 ```bash
 # Add the marketplace
-/plugin marketplace add your-user/planfirst
+/plugin marketplace add Serxo1/planfirst-plugin
 
 # Install the plugin
 /plugin install planfirst@planfirst-marketplace
@@ -36,7 +37,7 @@ PlanFirst: [extracts dimensions, asks 2 follow-up questions,
            generates architecture.md + agent rules]
 ```
 
-> **Local testing:** `claude --plugin-dir ./path-to/planfirst`
+> **Local testing:** `claude --plugin-dir ./path-to/planfirst-plugin`
 
 ---
 
@@ -249,7 +250,7 @@ Firmly says no. HTTP caching + CDN instead.
 
 ```bash
 # 1. Add the marketplace
-/plugin marketplace add your-user/planfirst
+/plugin marketplace add Serxo1/planfirst-plugin
 
 # 2. Install the plugin
 /plugin install planfirst@planfirst-marketplace
@@ -263,8 +264,8 @@ Firmly says no. HTTP caching + CDN instead.
 
 ```bash
 # Clone and test locally
-git clone https://github.com/your-user/planfirst.git
-claude --plugin-dir ./planfirst
+git clone https://github.com/Serxo1/planfirst-plugin.git
+claude --plugin-dir ./planfirst-plugin
 ```
 
 ### Manual skill install
