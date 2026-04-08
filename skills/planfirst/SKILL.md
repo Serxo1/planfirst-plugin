@@ -62,6 +62,8 @@ Read `extraction-rules.md` in this skill directory. Analyze the user's descripti
 | access_pattern | enum | read_heavy, write_heavy, balanced, graph_like, time_series, unknown |
 | has_offline_requirement | bool/null | inferred |
 | latency_critical | bool/null | inferred |
+| compliance_requirement | contextual | hipaa, pci, soc2, gdpr, ferpa, ccpa, data_sovereignty, none |
+| ai_complexity | contextual | simple, rag, agentic, training, orchestration, none |
 
 For each dimension, assign:
 - `value` — inferred value

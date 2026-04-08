@@ -37,6 +37,16 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | "Chrome extension", "browser extension", "plugin" | web | 0.80 |
 | "Slack bot", "Discord bot", "Telegram bot" | web | 0.80 |
 | "AI agent", "LLM app", "chatbot" | web | 0.75 |
+| "e-commerce", "online store", "marketplace", "shop" | web | 0.90 |
+| "admin panel", "backoffice", "internal tool", "dashboard" (internal context) | web | 0.85 |
+| "landing page", "portfolio", "static site" | web | 0.90 |
+| "Chrome extension", "browser extension", "Firefox addon" | extension | 0.95 |
+| "Electron", "Tauri", "desktop app" (with desktop context) | desktop | 0.95 |
+| "webhook", "integration platform", "Zapier alternative" | web | 0.85 |
+| "LMS", "online course", "e-learning", "education platform" | web | 0.85 |
+| "healthcare", "medical", "patient portal", "EHR", "EMR" | web | 0.80 |
+| "fintech", "banking", "trading", "payment platform" | web | 0.85 |
+| "monorepo", "multiple apps", "web + mobile" | multi_platform | 0.85 |
 
 ## team_size
 
@@ -86,15 +96,21 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | Signal | Value | Confidence |
 |--------|-------|------------|
 | "chat", "live", "real-time", "websocket", "notifications", "live feed" | true | 0.90 |
-| "collaboration", "shared editing", "multiplayer", "live cursors" | true | 0.90 |
-| "streaming", "live video", "live audio" | true | 0.85 |
+| "collaboration", "shared editing", "multiplayer", "live cursors", "CRDT" | true | 0.95 |
+| "streaming", "live video", "live audio", "video call" | true | 0.85 |
 | "push notifications" (mobile) | true | 0.75 |
+| "live classroom", "live session", "webinar" (education) | true | 0.80 |
 | "CRUD", "admin panel", "reports", "static content", "blog" | false | 0.85 |
 | "form", "survey", "questionnaire" | false | 0.85 |
 | "dashboard" without "live" | false | 0.75 |
 | "social network" without specifying live features | null | 0.45 |
 | "marketplace", "e-commerce" without live features | false | 0.70 |
 | "analytics dashboard" | false | 0.80 |
+| "browser extension" | false | 0.80 |
+| "CLI tool" | false | 0.90 |
+| "desktop app" without collab/sync mention | false | 0.75 |
+| "LMS", "online course" without live sessions | false | 0.75 |
+| "webhook platform", "integration" | false | 0.85 |
 
 ## access_pattern
 
@@ -107,6 +123,14 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | "ingestion", "write-heavy", "logging", "event collection", "IoT data" | write_heavy | 0.80 |
 | "CRUD app", "form-based", "admin panel" | balanced | 0.75 |
 | "file storage", "uploads", "media management" | read_heavy | 0.70 |
+| "e-commerce", "marketplace", "orders and inventory" | balanced | 0.80 |
+| "LMS", "courses", "lessons" (mostly reading content + some progress writes) | read_heavy | 0.75 |
+| "fintech", "transactions", "ledger", "payments" | write_heavy | 0.75 |
+| "collaboration", "shared documents", "real-time editing" | balanced | 0.70 |
+| "webhook delivery", "event processing", "integration" | write_heavy | 0.80 |
+| "recommendation engine", "personalization" | graph_like | 0.75 |
+| "audit trail", "activity log", "event sourcing" | time_series | 0.80 |
+| "healthcare records", "patient data" | read_heavy | 0.70 |
 | No clear signal | unknown | 0.30 |
 
 ## has_offline_requirement
@@ -118,8 +142,12 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | "PWA with offline", "service worker", "offline-first" | true | 0.90 |
 | "mobile app" without offline mention | null | 0.40 |
 | "web app", "SaaS", "cloud", "always online" | false | 0.75 |
-| "desktop app" without offline mention | null | 0.50 |
+| "desktop app" without offline mention | true | 0.65 |
+| "Electron", "Tauri" | true | 0.75 |
 | "internal tool" (typically on corporate network) | false | 0.70 |
+| "browser extension" | false | 0.85 |
+| "LMS" without offline mention | false | 0.75 |
+| "e-commerce" | false | 0.80 |
 
 ## latency_critical
 
@@ -132,6 +160,12 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | "batch processing", "reports", "analytics" | false | 0.85 |
 | "API", "SaaS" without latency mention | null | 0.40 |
 | "search engine", "autocomplete" | true | 0.75 |
+| "e-commerce checkout", "payment processing" | false | 0.70 |
+| "healthcare", "medical records" | false | 0.75 |
+| "LMS", "course platform" | false | 0.85 |
+| "webhook processing" | false | 0.80 |
+| "desktop app" | null | 0.45 |
+| "collaboration", "real-time editing" | true | 0.80 |
 
 ## hosting_preference (contextual — not scored, just detected)
 
@@ -145,6 +179,44 @@ Use these rules to infer dimension values and assign confidence scores from a pr
 | No mention | default (recommend PaaS for validate/grow, flexible for scale+) |
 
 This dimension doesn't need confidence scoring — if the user mentions it, respect it. If not, default based on moment and team_size.
+
+## compliance_requirement (contextual — not scored, just detected)
+
+| Signal | Value |
+|--------|-------|
+| "HIPAA", "PHI", "protected health information", "healthcare", "medical records" | hipaa |
+| "PCI", "PCI-DSS", "card data", "payment processing" (self-hosted) | pci |
+| "SOC 2", "SOC2", "audit", "compliance certification" | soc2 |
+| "GDPR", "data protection", "EU users", "right to be forgotten" | gdpr |
+| "FERPA", "student records", "education privacy" | ferpa |
+| "CCPA", "California privacy" | ccpa |
+| "air-gapped", "on-premise", "data sovereignty", "government" | data_sovereignty |
+| No mention | none |
+
+This dimension doesn't need confidence scoring — if the user mentions it, respect it immediately. Compliance requirements OVERRIDE convenience recommendations:
+- HIPAA → every service must have BAA, encryption mandatory, audit logs mandatory
+- PCI → never store card data, use Stripe/payment processor, audit trail mandatory
+- SOC 2 → document access controls, encrypted connections, change management
+- GDPR → data export capability, deletion capability, consent tracking, EU hosting option
+- data_sovereignty → self-hosted alternatives for ALL cloud services
+
+## ai_complexity (contextual — detected when product involves AI/LLM)
+
+| Signal | Value |
+|--------|-------|
+| "chatbot", "Q&A bot", "simple AI feature" | simple (single LLM call, no RAG) |
+| "RAG", "knowledge base", "document search", "embeddings" | rag (retrieval + generation) |
+| "AI agent", "tool use", "function calling", "multi-step" | agentic (multi-step with tools) |
+| "fine-tuning", "model training", "custom model" | training (needs GPU compute) |
+| "multiple models", "model routing", "ensemble" | orchestration (complex inference) |
+| No AI mention | none |
+
+Use this to calibrate AI infrastructure recommendations:
+- simple → direct API call, no vector DB, no framework
+- rag → pgvector, chunking strategy, embedding pipeline
+- agentic → consider framework (Anthropic SDK tool use), state management, error recovery
+- training → GPU compute (Modal, Lambda Cloud), experiment tracking (MLflow)
+- orchestration → LLM gateway, model routing logic, cost tracking per model
 
 ## Combination Boosts
 
@@ -160,6 +232,22 @@ When multiple dimensions align, boost confidence on related dimensions:
 | "e-commerce" + "catalog" | access_pattern → read_heavy (+0.10) |
 | "IoT" + "sensors" | write_heavy (+0.15), latency_critical → true (+0.10) |
 | "B2B SaaS" + "enterprise" | user_scale → lt_1k (+0.20), budget → medium (+0.15) |
+| "e-commerce" + "solo" | budget → free or low (+0.20), user_scale → lt_1k (+0.15) |
+| "e-commerce" + "marketplace" | access_pattern → balanced (+0.10), needs_realtime → false (+0.10) |
+| "healthcare" + "patient" | compliance → hipaa (mandatory), access_pattern → read_heavy (+0.10) |
+| "fintech" + "payments" | compliance → pci (mandatory), latency_critical → false (+0.10) |
+| "LMS" + "video" | budget → low (+0.15), needs_realtime → false (+0.10) |
+| "desktop" + "sync" | has_offline → true (+0.20), needs_realtime → false (+0.10) |
+| "browser extension" + "solo" | budget → free (+0.25), user_scale → unknown (+0.0) |
+| "AI" + "RAG" + "solo" | budget → low (+0.15), ai_complexity → rag |
+| "AI" + "agent" + "tool use" | ai_complexity → agentic, budget → medium (+0.10) |
+| "collaboration" + "editing" | needs_realtime → true (+0.15), latency_critical → true (+0.10) |
+| "webhook" + "integration" | access_pattern → write_heavy (+0.15), needs_realtime → false (+0.15) |
+| "open source" + "library" | budget → free (+0.30), user_scale → unknown (+0.0) |
+| "monorepo" + "web + mobile" | product_type → multi_platform (+0.10) |
+| "internal tool" + "company" | user_scale → lt_1k (+0.25), needs_realtime → false (+0.10) |
+| "GDPR" + "EU" | compliance → gdpr (mandatory) |
+| "multi-tenant" + "B2B" | access_pattern → balanced (+0.10) |
 
 Apply boosts AFTER individual scoring. Cap total confidence at 1.0.
 
